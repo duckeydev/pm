@@ -21,7 +21,10 @@ export const proxy = auth((req) => {
   if (!req.auth) {
     const signInUrl = new URL("/sign-in", req.nextUrl.origin)
     if (pathname !== "/") {
-      signInUrl.searchParams.set("callbackUrl", pathname)
+      signInUrl.searchParams.set(
+        "callbackUrl",
+        `${pathname}${req.nextUrl.search}`
+      )
     }
     return NextResponse.redirect(signInUrl)
   }

@@ -5,11 +5,18 @@ export function getGithubOrg() {
   return process.env.GITHUB_ORG?.trim() || DEFAULT_GITHUB_ORG
 }
 
-export function getBoardRepo() {
-  const raw = process.env.GITHUB_BOARD_REPO?.trim() || DEFAULT_BOARD_REPO
-  const [owner, repo] = raw.split("/")
-  if (!owner || !repo) {
-    throw new Error(`Invalid GITHUB_BOARD_REPO: ${raw}`)
+export function parseBoardRepo(raw: string) {
+  const value = raw.trim()
+  const parts = value.split("/")
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    throw new Error(
+      `Invalid GITHUB_BOARD_REPO: ${raw}. Expected exactly owner/repo.`
+    )
   }
+  const [owner, repo] = parts
   return { owner, repo, fullName: `${owner}/${repo}` }
+}
+
+export function getBoardRepo() {
+  return parseBoardRepo(process.env.GITHUB_BOARD_REPO?.trim() || DEFAULT_BOARD_REPO)
 }

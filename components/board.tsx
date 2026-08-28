@@ -66,14 +66,19 @@ export function Board({ initialIssues }: { initialIssues: BoardIssue[] }) {
   }
 
   function moveIssue(issueNumber: number, column: ColumnId) {
-    const previous = issues
+    const snapshot = issues.find((issue) => issue.number === issueNumber)
+    if (!snapshot) return
     applyColumn(issueNumber, column)
     startTransition(async () => {
       try {
         await requestMove(issueNumber, column)
         toast.success(`Moved #${issueNumber} to ${COLUMN_TITLES[column]}`)
       } catch (error) {
-        setIssues(previous)
+        setIssues((current) =>
+          current.map((issue) =>
+            issue.number === issueNumber ? snapshot : issue
+          )
+        )
         toast.error(
           error instanceof Error ? error.message : "Could not move issue"
         )
