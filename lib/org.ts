@@ -9,12 +9,25 @@ export class OrgAccessError extends Error {
   }
 }
 
-function errorStatus(error: unknown): number | undefined {
+export class GitHubAuthError extends Error {
+  readonly status = 401
+
+  constructor(message = "GitHub access token is no longer valid") {
+    super(message)
+    this.name = "GitHubAuthError"
+  }
+}
+
+export function githubErrorStatus(error: unknown): number | undefined {
   if (typeof error === "object" && error && "status" in error) {
     const status = (error as { status?: unknown }).status
     return typeof status === "number" ? status : undefined
   }
   return undefined
+}
+
+export function isGitHubUnauthorized(error: unknown): boolean {
+  return error instanceof GitHubAuthError || githubErrorStatus(error) === 401
 }
 
 export async function assertOrgMember(
@@ -30,7 +43,10 @@ export async function assertOrgMember(
     }
   } catch (error) {
     if (error instanceof OrgAccessError) throw error
-    const status = errorStatus(error)
+    const status = githubErrorStatus(error)
+    if (status === 401) {
+      throw new GitHubAuthError()
+    }
     if (status === 404 || status === 403) {
       throw new OrgAccessError()
     }

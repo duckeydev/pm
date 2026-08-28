@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useMemo, useRef, useState, useTransition } from "react"
 import {
   DndContext,
   DragOverlay,
@@ -38,6 +38,7 @@ export function Board({ initialIssues }: { initialIssues: BoardIssue[] }) {
   const [issues, setIssues] = useState(initialIssues)
   const [activeNumber, setActiveNumber] = useState<number | null>(null)
   const [, startTransition] = useTransition()
+  const pendingMoves = useRef(new Set<number>())
 
   const grouped = useMemo(() => groupIssuesByColumn(issues), [issues])
   const activeIssue = issues.find((issue) => issue.number === activeNumber) ?? null
@@ -66,8 +67,10 @@ export function Board({ initialIssues }: { initialIssues: BoardIssue[] }) {
   }
 
   function moveIssue(issueNumber: number, column: ColumnId) {
+    if (pendingMoves.current.has(issueNumber)) return
     const snapshot = issues.find((issue) => issue.number === issueNumber)
     if (!snapshot) return
+    pendingMoves.current.add(issueNumber)
     applyColumn(issueNumber, column)
     startTransition(async () => {
       try {
@@ -82,6 +85,8 @@ export function Board({ initialIssues }: { initialIssues: BoardIssue[] }) {
         toast.error(
           error instanceof Error ? error.message : "Could not move issue"
         )
+      } finally {
+        pendingMoves.current.delete(issueNumber)
       }
     })
   }

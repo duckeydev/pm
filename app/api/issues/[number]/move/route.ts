@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { AuthRequiredError, OrgAccessError, requireBoardAccess } from "@/lib/access"
 import { getBoardRepo } from "@/lib/config"
 import { isColumnId, moveIssueStatus } from "@/lib/issues"
+import { GitHubAuthError, isGitHubUnauthorized } from "@/lib/org"
 
 export const runtime = "nodejs"
 
@@ -34,11 +35,18 @@ export async function POST(
 
     return NextResponse.json(result)
   } catch (error) {
-    if (error instanceof AuthRequiredError) {
+    if (error instanceof AuthRequiredError || error instanceof GitHubAuthError) {
       return NextResponse.json({ error: error.message }, { status: 401 })
     }
     if (error instanceof OrgAccessError) {
       return NextResponse.json({ error: error.message }, { status: 403 })
+    }
+
+    if (isGitHubUnauthorized(error)) {
+      return NextResponse.json(
+        { error: "GitHub access token is no longer valid" },
+        { status: 401 }
+      )
     }
 
     const status =

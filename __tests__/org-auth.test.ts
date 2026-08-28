@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 
 import type { GithubRestClient } from "@/lib/github"
-import { assertOrgMember, isOrgMember, OrgAccessError } from "@/lib/org"
+import { assertOrgMember, GitHubAuthError, isOrgMember, OrgAccessError } from "@/lib/org"
 
 function membershipClient(
   impl: GithubRestClient["rest"]["orgs"]["getMembershipForAuthenticatedUser"]
@@ -52,5 +52,18 @@ describe("org auth gates the board", () => {
     await expect(assertOrgMember(octokit, "netgoat-xyz")).resolves.toBeUndefined()
     await expect(isOrgMember(octokit, "netgoat-xyz")).resolves.toBe(true)
     expect(getMembership).toHaveBeenCalledWith({ org: "netgoat-xyz" })
+  })
+
+  it("treats a revoked GitHub token as auth failure, not a denied org member", async () => {
+    const octokit = membershipClient(
+      vi.fn().mockRejectedValue(Object.assign(new Error("Unauthorized"), { status: 401 }))
+    )
+
+    await expect(assertOrgMember(octokit, "netgoat-xyz")).rejects.toBeInstanceOf(
+      GitHubAuthError
+    )
+    await expect(isOrgMember(octokit, "netgoat-xyz")).rejects.toBeInstanceOf(
+      GitHubAuthError
+    )
   })
 })

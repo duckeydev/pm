@@ -3,10 +3,11 @@ import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { AppHeader } from "@/components/app-header"
 import { Board } from "@/components/board"
+import { AuthRequiredError } from "@/lib/access"
 import { getBoardRepo, getGithubOrg } from "@/lib/config"
-import { createUserOctokit } from "@/lib/github"
+import { createUserOctokit, type BoardIssue } from "@/lib/github"
 import { listBoardIssues } from "@/lib/issues"
-import { isOrgMember } from "@/lib/org"
+import { isGitHubUnauthorized, isOrgMember } from "@/lib/org"
 
 export const dynamic = "force-dynamic"
 
@@ -17,12 +18,20 @@ export default async function HomePage() {
   }
 
   const octokit = createUserOctokit(session.accessToken)
-  const member = await isOrgMember(octokit, getGithubOrg())
-  if (!member) {
-    redirect("/denied")
-  }
+  let issues: BoardIssue[]
 
-  const issues = await listBoardIssues(octokit, getBoardRepo())
+  try {
+    const member = await isOrgMember(octokit, getGithubOrg())
+    if (!member) {
+      redirect("/denied")
+    }
+    issues = await listBoardIssues(octokit, getBoardRepo())
+  } catch (error) {
+    if (!(error instanceof AuthRequiredError) && !isGitHubUnauthorized(error)) {
+      throw error
+    }
+    redirect("/session-expired")
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -31,3 +40,4 @@ export default async function HomePage() {
     </div>
   )
 }
+
