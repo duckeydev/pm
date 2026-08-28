@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation"
 
 import { auth } from "@/auth"
-import { signOutToLogin } from "@/app/actions"
 import { AppHeader } from "@/components/app-header"
 import { Board } from "@/components/board"
 import { AuthRequiredError } from "@/lib/access"
@@ -31,8 +30,7 @@ export default async function HomePage() {
     if (!(error instanceof AuthRequiredError) && !isGitHubUnauthorized(error)) {
       throw error
     }
-    await signOutToLogin()
-    redirect("/sign-in")
+    redirect("/session-expired")
   }
 
   return (
@@ -42,3 +40,4 @@ export default async function HomePage() {
     </div>
   )
 }
+
