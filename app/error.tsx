@@ -1,5 +1,8 @@
 "use client"
 
+import { signOutToLogin } from "@/app/actions"
+import { Button } from "@/components/ui/button"
+
 export default function ErrorPage({
   error,
   reset,
@@ -14,13 +17,20 @@ export default function ErrorPage({
         <p className="text-sm text-muted-foreground">
           {error.message || "The board could not load GitHub issues."}
         </p>
-        <button
-          type="button"
-          onClick={reset}
-          className="text-sm text-foreground underline-offset-4 hover:underline"
-        >
-          Try again
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={reset}
+            className="text-sm text-foreground underline-offset-4 hover:underline"
+          >
+            Try again
+          </button>
+          <form action={signOutToLogin}>
+            <Button type="submit" variant="ghost" size="sm">
+              Sign out
+            </Button>
+          </form>
+        </div>
       </div>
     </main>
   )
