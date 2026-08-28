@@ -6,9 +6,8 @@ import { AppHeader } from "@/components/app-header"
 import { Board } from "@/components/board"
 import { AuthRequiredError } from "@/lib/access"
 import { getBoardRepo, getGithubOrg } from "@/lib/config"
-import { createUserOctokit } from "@/lib/github"
+import { createUserOctokit, type BoardIssue } from "@/lib/github"
 import { listBoardIssues } from "@/lib/issues"
-import type { BoardIssue } from "@/lib/github"
 import { isGitHubUnauthorized, isOrgMember } from "@/lib/org"
 
 export const dynamic = "force-dynamic"
@@ -29,10 +28,11 @@ export default async function HomePage() {
     }
     issues = await listBoardIssues(octokit, getBoardRepo())
   } catch (error) {
-    if (error instanceof AuthRequiredError || isGitHubUnauthorized(error)) {
-      await signOutToLogin()
+    if (!(error instanceof AuthRequiredError) && !isGitHubUnauthorized(error)) {
+      throw error
     }
-    throw error
+    await signOutToLogin()
+    redirect("/sign-in")
   }
 
   return (
